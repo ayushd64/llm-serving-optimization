@@ -1,0 +1,134 @@
+{
+  "timestamp_utc": "20260713-023331",
+  "config": {
+    "ollama_url": "http://localhost:11434/api/generate",
+    "model": "qwen3.5:2b",
+    "prompt": "Explain what a GPU is in two sentences.",
+    "warmup_runs": 2,
+    "trial_runs": 10,
+    "think": false,
+    "options": {
+      "temperature": 0,
+      "seed": 42,
+      "num_predict": 512
+    }
+  },
+  "summaries": {
+    "gen_tps": {
+      "count": 10,
+      "mean": 51.68819473924144,
+      "median": 51.75666946760974,
+      "min": 49.80762573197225,
+      "max": 53.260705895039585,
+      "stdev": 0.9623675092267294
+    },
+    "ttft_s": {
+      "count": 10,
+      "mean": 2.448046089999957,
+      "median": 2.436012499999947,
+      "min": 2.4174608999999236,
+      "max": 2.5063984999997047,
+      "stdev": 0.03174163519604996
+    },
+    "total_s": {
+      "count": 10,
+      "mean": 4.017596429999935,
+      "median": 4.013019649999933,
+      "min": 3.9607244999999693,
+      "max": 4.082175600000028,
+      "stdev": 0.04218584364880171
+    }
+  },
+  "trials": [
+    {
+      "ttft_s": 2.446244699999852,
+      "total_s": 3.969406700000036,
+      "prompt_tokens": 22,
+      "output_tokens": 81,
+      "gen_tps": 53.260705895039585,
+      "load_s": 0.359935,
+      "response_text": "A Graphics Processing Unit (GPU) is an electronic circuit designed to process and display images, videos, or other graphical data at high speeds using thousands of specialized processors called cores. While traditional CPUs handle general computing tasks like running software applications efficiently, GPUs are optimized for parallel processing, making them ideal for rendering complex visual effects in video games, creating 3D models, and performing real-time image analysis."
+    },
+    {
+      "ttft_s": 2.4174608999999236,
+      "total_s": 3.9607244999999693,
+      "prompt_tokens": 22,
+      "output_tokens": 81,
+      "gen_tps": 52.55106211535542,
+      "load_s": 0.350217,
+      "response_text": "A Graphics Processing Unit (GPU) is an electronic circuit designed to process and display images, videos, or other graphical data at high speeds using thousands of specialized processors called cores. While traditional CPUs handle general computing tasks like running software applications efficiently, GPUs are optimized for parallel processing, making them ideal for rendering complex visual effects in video games, creating 3D models, and performing real-time image analysis."
+    },
+    {
+      "ttft_s": 2.4246347000000696,
+      "total_s": 3.986968000000161,
+      "prompt_tokens": 22,
+      "output_tokens": 81,
+      "gen_tps": 51.92627238599299,
+      "load_s": 0.3599395,
+      "response_text": "A Graphics Processing Unit (GPU) is an electronic circuit designed to process and display images, videos, or other graphical data at high speeds using thousands of specialized processors called cores. While traditional CPUs handle general computing tasks like running software applications efficiently, GPUs are optimized for parallel processing, making them ideal for rendering complex visual effects in video games, creating 3D models, and performing real-time image analysis."
+    },
+    {
+      "ttft_s": 2.4723942999999053,
+      "total_s": 4.020141999999851,
+      "prompt_tokens": 22,
+      "output_tokens": 81,
+      "gen_tps": 52.36289164695516,
+      "load_s": 0.3857818,
+      "response_text": "A Graphics Processing Unit (GPU) is an electronic circuit designed to process and display images, videos, or other graphical data at high speeds using thousands of specialized processors called cores. While traditional CPUs handle general computing tasks like running software applications efficiently, GPUs are optimized for parallel processing, making them ideal for rendering complex visual effects in video games, creating 3D models, and performing real-time image analysis."
+    },
+    {
+      "ttft_s": 2.424537500000042,
+      "total_s": 3.996831099999781,
+      "prompt_tokens": 22,
+      "output_tokens": 81,
+      "gen_tps": 51.587066549226485,
+      "load_s": 0.3325703,
+      "response_text": "A Graphics Processing Unit (GPU) is an electronic circuit designed to process and display images, videos, or other graphical data at high speeds using thousands of specialized processors called cores. While traditional CPUs handle general computing tasks like running software applications efficiently, GPUs are optimized for parallel processing, making them ideal for rendering complex visual effects in video games, creating 3D models, and performing real-time image analysis."
+    },
+    {
+      "ttft_s": 2.419526399999995,
+      "total_s": 4.009684399999969,
+      "prompt_tokens": 22,
+      "output_tokens": 81,
+      "gen_tps": 50.99249654856343,
+      "load_s": 0.3420964,
+      "response_text": "A Graphics Processing Unit (GPU) is an electronic circuit designed to process and display images, videos, or other graphical data at high speeds using thousands of specialized processors called cores. While traditional CPUs handle general computing tasks like running software applications efficiently, GPUs are optimized for parallel processing, making them ideal for rendering complex visual effects in video games, creating 3D models, and performing real-time image analysis."
+    },
+    {
+      "ttft_s": 2.425780300000042,
+      "total_s": 4.016354899999897,
+      "prompt_tokens": 22,
+      "output_tokens": 81,
+      "gen_tps": 51.01677696157933,
+      "load_s": 0.3524387,
+      "response_text": "A Graphics Processing Unit (GPU) is an electronic circuit designed to process and display images, videos, or other graphical data at high speeds using thousands of specialized processors called cores. While traditional CPUs handle general computing tasks like running software applications efficiently, GPUs are optimized for parallel processing, making them ideal for rendering complex visual effects in video games, creating 3D models, and performing real-time image analysis."
+    },
+    {
+      "ttft_s": 2.489039000000048,
+      "total_s": 4.066539399999783,
+      "prompt_tokens": 22,
+      "output_tokens": 81,
+      "gen_tps": 51.43895719897732,
+      "load_s": 0.4056125,
+      "response_text": "A Graphics Processing Unit (GPU) is an electronic circuit designed to process and display images, videos, or other graphical data at high speeds using thousands of specialized processors called cores. While traditional CPUs handle general computing tasks like running software applications efficiently, GPUs are optimized for parallel processing, making them ideal for rendering complex visual effects in video games, creating 3D models, and performing real-time image analysis."
+    },
+    {
+      "ttft_s": 2.454444599999988,
+      "total_s": 4.082175600000028,
+      "prompt_tokens": 22,
+      "output_tokens": 81,
+      "gen_tps": 49.80762573197225,
+      "load_s": 0.3711391,
+      "response_text": "A Graphics Processing Unit (GPU) is an electronic circuit designed to process and display images, videos, or other graphical data at high speeds using thousands of specialized processors called cores. While traditional CPUs handle general computing tasks like running software applications efficiently, GPUs are optimized for parallel processing, making them ideal for rendering complex visual effects in video games, creating 3D models, and performing real-time image analysis."
+    },
+    {
+      "ttft_s": 2.5063984999997047,
+      "total_s": 4.067137699999876,
+      "prompt_tokens": 22,
+      "output_tokens": 81,
+      "gen_tps": 51.938092358752435,
+      "load_s": 0.4373801,
+      "response_text": "A Graphics Processing Unit (GPU) is an electronic circuit designed to process and display images, videos, or other graphical data at high speeds using thousands of specialized processors called cores. While traditional CPUs handle general computing tasks like running software applications efficiently, GPUs are optimized for parallel processing, making them ideal for rendering complex visual effects in video games, creating 3D models, and performing real-time image analysis."
+    }
+  ]
+}

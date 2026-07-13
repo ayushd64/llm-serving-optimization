@@ -1,0 +1,17 @@
+# config.yaml
+# Every knob for a benchmark run lives here, so nothing is hardcoded in the code.
+# Change a value, re-run, and you have a new experiment -- fully reproducible.
+
+ollama_url: "http://127.0.0.1:11434/api/generate"
+model: "qwen3.5:2b"
+prompt: "Explain what a GPU is in two sentences."
+
+warmup_runs: 2      # runs we throw away, to load the model and let speeds settle
+trial_runs: 10      # runs we actually measure and keep
+
+think: false        # keep the model's hidden "thinking" mode OFF for clean speed
+
+options:            # passed straight to Ollama to control HOW it generates
+  temperature: 0    # 0 = always pick the single most likely token -> repeatable
+  seed: 42          # fixes the random generator, for extra repeatability
+  num_predict: 512  # hard cap on output length, so a run can never run away

@@ -1,9 +1,13 @@
 """
-client.py  (upgraded: now measures WHERE the time goes)
+client.py
 
-One job: send ONE request to Ollama and bring back a full timing breakdown --
-separating loading, prefill (reading the prompt), and generation, alongside our
-own wall-clock view. Comparing those two views is how we hunt hidden costs.
+Talks to serving engines. Each engine speaks a different dialect (Ollama has its
+own API; vLLM speaks the OpenAI format), so we define ONE interface --
+run(prompt) -> RequestResult -- and write a small ADAPTER per engine. The
+benchmark never needs to know which engine it's using.
+
+Fairness rule: we time BOTH engines with OUR OWN wall-clock stopwatch, not each
+engine's self-reported timings, so both are measured with the same ruler.
 """
 
 import json
@@ -12,89 +16,118 @@ from dataclasses import dataclass
 
 import requests
 
-# A shared session: reuses the TCP connection between requests (a little faster)
-# and ignores any system HTTP proxy, so nothing on the machine can silently
-# distort our measurements. Reproducibility hygiene for a benchmark tool.
-_session = requests.Session()
-_session.trust_env = False
-
-
-NANOSECONDS_PER_SECOND = 1_000_000_000
-
 
 @dataclass
 class RequestResult:
-    # --- our wall-clock stopwatch (what a user actually feels) ---
-    ttft_s: float          # send -> first visible answer token
-    total_s: float         # send -> whole answer finished
-
-    # --- Ollama's OWN reported breakdown (converted ns -> seconds) ---
-    load_s: float          # loading the model (~0 once warm)
-    prefill_s: float       # reading/processing the prompt
-    gen_s: float           # generating the answer tokens
-    ollama_total_s: float  # Ollama's own total for the whole job
-
-    # --- counts and speed ---
-    prompt_tokens: int
-    output_tokens: int
-    gen_tps: float         # output_tokens / gen_s  (true generation speed)
-
-    # --- sanity checks ---
-    thinking_chars: int    # >0 means the model secretly "thought" (should be 0)
+    ttft_s: float          # wall-clock: send -> first token
+    total_s: float         # wall-clock: send -> done
+    gen_tps: float         # decode speed: tokens-after-first / time-after-first
+    prompt_tokens: int     # engine-reported prompt token count
+    output_tokens: int     # engine-reported generated token count
     response_text: str
 
 
-def run_single_request(ollama_url, model, prompt, options, think):
-    payload = {
-        "model": model,
-        "prompt": prompt,
-        "stream": True,
-        "think": think,
-        "options": options,
-    }
+def _decode_speed(output_tokens, ttft_s, total_s):
+    """Tokens generated AFTER the first, over the time spent after the first token.
+    Computed identically for every engine, so comparisons are apples-to-apples."""
+    window = total_s - ttft_s
+    return (max(output_tokens - 1, 0) / window) if window > 0 else 0.0
 
-    start = time.perf_counter()
-    first_response_time = None
-    response_text = ""
-    thinking_text = ""
-    final_chunk = {}
 
-    with _session.post(ollama_url, json=payload, stream=True) as response:
-        response.raise_for_status()
-        for line in response.iter_lines():
-            if not line:
-                continue
-            chunk = json.loads(line)
+class EngineClient:
+    """The interface every engine adapter must implement."""
+    def run(self, prompt, temperature, max_tokens) -> RequestResult:
+        raise NotImplementedError
 
-            # capture any hidden "thinking" text separately (should stay empty)
-            thinking_text += chunk.get("thinking") or ""
 
-            piece = chunk.get("response", "")
-            if piece:
-                if first_response_time is None:
-                    first_response_time = time.perf_counter()   # first VISIBLE token
-                response_text += piece
+class OllamaClient(EngineClient):
+    """Adapter for Ollama's native /api/generate streaming format."""
+    def __init__(self, url, model):
+        self.url, self.model = url, model
+        self.session = requests.Session()
+        self.session.trust_env = False          # ignore system proxy (our earlier fix)
 
-            if chunk.get("done"):
-                final_chunk = chunk          # last packet carries all the numbers
-                break
+    def run(self, prompt, temperature, max_tokens):
+        payload = {
+            "model": self.model, "prompt": prompt, "stream": True, "think": False,
+            "options": {"temperature": temperature, "num_predict": max_tokens},
+        }
+        start = time.perf_counter()
+        first, text, final = None, "", {}
+        with self.session.post(self.url, json=payload, stream=True) as r:
+            r.raise_for_status()
+            for line in r.iter_lines():
+                if not line:
+                    continue
+                chunk = json.loads(line)
+                piece = chunk.get("response", "")
+                if piece:
+                    if first is None:
+                        first = time.perf_counter()
+                    text += piece
+                if chunk.get("done"):
+                    final = chunk
+                    break
+        end = time.perf_counter()
+        ttft = (first - start) if first else 0.0
+        out_tok = final.get("eval_count", 0)
+        return RequestResult(ttft, end - start, _decode_speed(out_tok, ttft, end - start),
+                             final.get("prompt_eval_count", 0), out_tok, text)
 
-    end = time.perf_counter()
 
-    ns = NANOSECONDS_PER_SECOND
-    output_tokens = final_chunk.get("eval_count", 0)
-    gen_s = final_chunk.get("eval_duration", 0) / ns
+class VLLMClient(EngineClient):
+    """Adapter for vLLM's OpenAI-format /v1/chat/completions streaming."""
+    def __init__(self, url, model):
+        self.url, self.model = url, model
+        self.session = requests.Session()
+        self.session.trust_env = False
 
-    return RequestResult(
-        ttft_s=(first_response_time - start) if first_response_time else 0.0,
-        total_s=end - start,
-        load_s=final_chunk.get("load_duration", 0) / ns,
-        prefill_s=final_chunk.get("prompt_eval_duration", 0) / ns,
-        gen_s=gen_s,
-        ollama_total_s=final_chunk.get("total_duration", 0) / ns,
-        prompt_tokens=final_chunk.get("prompt_eval_count", 0),
-        output_tokens=output_tokens,
-        gen_tps=(output_tokens / gen_s) if gen_s > 0 else 0.0,
-        thinking_chars=len(thinking_text),
-        response_text=response_text,
-    )
+    def run(self, prompt, temperature, max_tokens):
+        payload = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": temperature, "max_tokens": max_tokens,
+            "stream": True,
+            "stream_options": {"include_usage": True},   # ask vLLM to report token counts
+        }
+        start = time.perf_counter()
+        first, text, usage = None, "", {}
+        with self.session.post(self.url, json=payload, stream=True) as r:
+            r.raise_for_status()
+            for line in r.iter_lines():
+                if not line:
+                    continue
+                # vLLM streams "Server-Sent Events": each line is  data: {...json...}
+                # and the stream ends with  data: [DONE]
+                line = line.decode("utf-8") if isinstance(line, bytes) else line
+                if not line.startswith("data:"):
+                    continue
+                payload_str = line[len("data:"):].strip()
+                if payload_str == "[DONE]":
+                    break
+                chunk = json.loads(payload_str)
+                if chunk.get("usage"):                    # final chunk carries token counts
+                    usage = chunk["usage"]
+                choices = chunk.get("choices", [])
+                if choices:
+                    piece = choices[0].get("delta", {}).get("content") or ""
+                    if piece:
+                        if first is None:
+                            first = time.perf_counter()
+                        text += piece
+        end = time.perf_counter()
+        ttft = (first - start) if first else 0.0
+        out_tok = usage.get("completion_tokens", 0)
+        return RequestResult(ttft, end - start, _decode_speed(out_tok, ttft, end - start),
+                             usage.get("prompt_tokens", 0), out_tok, text)
+
+
+def make_client(engine_config):
+    """Factory: build the right adapter from a config entry."""
+    name = engine_config["name"]
+    if name == "ollama":
+        return OllamaClient(engine_config["url"], engine_config["model"])
+    if name == "vllm":
+        return VLLMClient(engine_config["url"], engine_config["model"])
+    raise ValueError(f"Unknown engine: {name}")
+

@@ -1,0 +1,9 @@
+{
+  "engine": "vllm-int4",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct-AWQ",
+  "timestamp_utc": "20260716-063908",
+  "eval_text_chars": 20000,
+  "chunks": 10,
+  "tokens_scored": 4530,
+  "perplexity": 15.73403345816349
+}

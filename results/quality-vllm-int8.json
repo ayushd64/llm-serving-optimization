@@ -1,0 +1,9 @@
+{
+  "engine": "vllm-int8",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct-GPTQ-Int8",
+  "timestamp_utc": "20260716-063744",
+  "eval_text_chars": 20000,
+  "chunks": 10,
+  "tokens_scored": 4530,
+  "perplexity": 14.51109225183466
+}

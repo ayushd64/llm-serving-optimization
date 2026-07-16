@@ -1,13 +1,16 @@
 # LLM Inference Serving: An Honest Benchmark on Constrained Hardware
 
-Benchmarking **vLLM** and **Ollama** serving `Qwen2.5-1.5B-Instruct` on a single
-8 GB laptop GPU — measuring throughput, latency, memory, and **quality**, with a
-methodology designed to catch its own mistakes.
+Benchmarking **vLLM** and **Ollama** serving `Qwen2.5-1.5B-Instruct` on a single 8 GB
+laptop GPU — measuring throughput, latency, memory, and **quality**, with a methodology
+built to catch its own mistakes.
 
-**Headline finding: every performance ceiling I found in this study turned out to be
-a default configuration limit, not an architectural one.** Both engines' apparent
-"saturation points" moved when I changed a single setting. The engines were rarely
-the bottleneck; the defaults were.
+> **Headline finding: every performance ceiling I found in this study turned out to be a
+> default configuration limit, not an architectural one.** Both engines' apparent
+> "saturation points" moved when I changed a single setting. The engines were rarely the
+> bottleneck — the defaults were.
+
+This README documents what was measured, how, and — at length — what the numbers do **not**
+support. Three of my own hypotheses are refuted by data below. That is the point.
 
 ---
 
@@ -19,91 +22,113 @@ the bottleneck; the defaults were.
 | CPU / RAM | Intel i7 / 16 GB |
 | OS | Windows 11 + WSL2 (Ubuntu) |
 | Driver / CUDA | 581.95 / 13.0 |
-| vLLM | 0.22.1 (in WSL2) |
+| vLLM | 0.22.1 (running in WSL2) |
 | Ollama | native Windows |
-| Model | `Qwen2.5-1.5B-Instruct` (fp16 / GPTQ-Int8 / AWQ-Int4) |
+| Model | `Qwen2.5-1.5B-Instruct` — fp16 / GPTQ-Int8 / AWQ-Int4 |
+| **Measured** | **July 2026** |
 
-The 45 W laptop variant matters: it has substantially less bandwidth and compute than
-a 220 W desktop 3070. Absolute numbers here should not be compared to desktop results.
+Two details that shape every number here: this is the **45 W laptop** 3070, with far less
+bandwidth and compute than the 220 W desktop card of the same name — absolute figures are
+not comparable to desktop results. And the measurement date matters because the central
+finding concerns **version-specific defaults** (`max_num_seqs=256` in vLLM 0.22.1), which
+will change.
 
 Full versions and hand-recorded measurements: [`manifest.json`](manifest.json).
 
 ---
 
-## Results
-
-### 1. Throughput vs concurrency
+## 1. Throughput vs concurrency
 
 ![throughput](plots/throughput_vs_concurrency.png)
 
 | config | peak throughput | at concurrency |
 |---|---|---|
+| vLLM int4 (AWQ) | **2,276 tok/s** | 128 |
 | vLLM fp16 | **2,197 tok/s** | 128 |
-| vLLM int4 (AWQ) | **2,410 tok/s** | 128 |
+| vLLM int8 (GPTQ) | **2,061 tok/s** | 128 |
 | Ollama `NUM_PARALLEL=16` | **426 tok/s** | 32 |
 | Ollama `NUM_PARALLEL=8` | 326 tok/s | 32 |
-| Ollama `NUM_PARALLEL=32` | 184 tok/s | 32 (VRAM spill) |
-| Ollama default | ~31 tok/s | flat at all levels |
+| Ollama `NUM_PARALLEL=32` | 184 tok/s | 32 — *VRAM spill* |
+| Ollama default | ~31 tok/s | flat at every level |
 
-At single-request load the engines are **comparable** (vLLM 33 tok/s vs Ollama 35 tok/s).
-vLLM's advantage is entirely a concurrency story: continuous batching.
+At **single-request** load the engines are **comparable** (vLLM 33 tok/s, Ollama 35 tok/s).
+vLLM's advantage is entirely a concurrency story — continuous batching has nothing to batch
+when there is one request.
+
+### The number I almost published was wrong three times
+
+Ollama's default configuration **serialises** requests: throughput pinned at ~31 tok/s
+across every concurrency level while latency doubled with each doubling of load — the
+signature of `OLLAMA_NUM_PARALLEL=1`. Taken at face value, that yields a **73×** advantage
+for vLLM.
+
+Setting `OLLAMA_NUM_PARALLEL=8` closed the gap to **6.7×**. Sweeping further to `=16`
+closed it to **~5.2×**. And `=32` *reduced* throughput to 184 tok/s, because the KV cache
+for 32 slots × 4096 context pushed the footprint to 7.7 GB and forced an **18% CPU offload**
+— verified directly via `ollama ps` (`18%/82% CPU/GPU`).
+
+**Ollama's ceiling on this hardware is VRAM-bound, not architectural.**
+
+> **The ~5.2× figure is a ratio of two numbers that both benefit from prompt caching to an
+> unquantified degree.** Both engines were driven with one identical repeated prompt; vLLM
+> reported an **82% prefix-cache hit rate** under that workload, and Ollama's own prompt
+> caching was never measured. The honest statement is *"~5.2× at the configurations and
+> workload tested"* — not a clean architectural ratio. With random prompts,
+> `vllm bench serve` returned 1,703 tok/s at C=128 against our 2,197; the equivalent
+> correction for Ollama is unknown.
+
+## 2. Latency — the other half of the story
 
 ![latency](plots/latency_vs_concurrency.png)
 
-Throughput is only half the picture — the other half is what users wait.
+Throughput without latency is a half-truth: a server can post excellent tokens/sec while
+every user waits 40 seconds.
 
 | p50 latency | C=1 | C=8 | C=32 | C=64 | C=128 | C=256 |
 |---|---|---|---|---|---|---|
 | vLLM fp16 | 1.64s | 1.33s | 1.67s | 2.08s | **2.82s** | 20.88s |
+| vLLM int8 | 0.60s | 0.71s | 1.14s | 1.64s | **3.10s** | 13.56s |
 | vLLM int4 | 0.51s | 0.63s | 1.09s | 2.45s | **3.26s** | 21.16s |
 | Ollama `P=16` | 1.88s | 1.70s | **4.25s** | 8.95s | — | — |
 
-**vLLM holds p50 under 3 seconds while scaling throughput 72×** (30 → 2,197 tok/s
-from C=1 to C=128). That is the continuous-batching win stated properly: for this
-workload, throughput was nearly free in latency terms right up to the cliff.
+**vLLM holds p50 under ~3 s while scaling throughput 72×** (30 → 2,197 tok/s from C=1 to
+C=128). That is the continuous-batching win stated properly: for this workload, throughput
+was nearly free in latency terms right up to the cliff. p99 tracks p50 closely throughout —
+tight tails, predictable service.
 
-**Ollama's latency starts climbing at C=16** — exactly where its throughput plateaus —
-and then grows linearly: 4.25s → 8.95s as concurrency doubles. That is textbook
-post-saturation behaviour. Once throughput is pinned, Little's Law forces
-`latency = concurrency / throughput`, so every additional concurrent request is
-simply time spent queueing.
+**Ollama's latency begins climbing at C=16**, exactly where its throughput plateaus, then
+grows linearly: 4.25s → 8.95s as concurrency doubles. Textbook post-saturation behaviour —
+once throughput is pinned, Little's Law forces `latency = concurrency / throughput`, and
+every additional request is pure queueing.
 
-The vLLM explosion at C=256 (2.82s → 20.88s) is **not** saturation — it is the
-`max_num_seqs` artifact analysed in the next section.
+The vLLM explosion at C=256 is **not** saturation. See next section.
 
-**The number I almost published was wrong three times.** Ollama's default config
-serialises requests (flat 31 tok/s → a 73× "advantage" for vLLM). Setting
-`OLLAMA_NUM_PARALLEL=8` closed that to 6.7×. Sweeping further to `=16` closed it to
-**5.2×** — and `=32` *reduced* throughput because 16 slots × 4096 context exceeded
-8 GB and forced an 18% CPU offload (verified via `ollama ps`).
-
-**Ollama's ceiling on this hardware is VRAM-bound, not architectural.**
-
-### 2. The "saturation cliff" was a default
+## 3. The "saturation cliff" was a default
 
 ![correction](plots/max_num_seqs_correction.png)
 
-Our sweeps showed a dramatic throughput collapse at C=256 (2,197 → 610 tok/s, latency
-2.8s → 21s). I proposed two explanations and **both were wrong:**
+Our sweeps showed a dramatic collapse at C=256: throughput 2,197 → 610 tok/s, p50 latency
+2.8s → 20.9s. I proposed two explanations. **Both were wrong:**
 
-- *"KV cache exhaustion"* — refuted: vLLM's own logs reported `GPU KV cache usage: 3-8%`
-  during the collapse. Doubling the cache via INT4 (87k → 158k tokens) did not move the cliff.
-- *"Our load generator is the bottleneck"* — refuted: `vllm bench serve`, an independent
-  tool, reproduced the collapse (12.65 req/s vs our 12.2 req/s).
+| hypothesis | refuted by |
+|---|---|
+| *KV cache exhaustion* | vLLM's own logs reported `GPU KV cache usage: 3–8%` **during** the collapse. Doubling the cache via INT4 (87k → 158k tokens) did not move the cliff at all. |
+| *Our load generator is the bottleneck* | `vllm bench serve` — an independent tool — reproduced it (12.65 req/s vs our 12.2 req/s). |
 
-The actual cause: **vLLM's default `--max-num-seqs=256`.** Offering exactly 256 requests
-to a scheduler capped at 256 causes thrashing.
+The actual cause: **vLLM's default `--max-num-seqs=256`.** Offering exactly 256 concurrent
+requests to a scheduler capped at 256 sequences causes thrashing.
 
-| C=256 | `max_num_seqs=256` (default) | `max_num_seqs=512` |
+| C=256 (measured with `vllm bench serve`, random prompts) | `max_num_seqs=256` (default) | `max_num_seqs=512` |
 |---|---|---|
 | output throughput | 734 tok/s | **1,796 tok/s** (+145%) |
-| TPOT | 342 ms | **114 ms** (−67%) |
-| TTFT | 625 ms | 1,679 ms (**+169% — the cost**) |
+| time per output token | 342 ms | **114 ms** (−67%) |
+| time to first token | 625 ms | 1,679 ms (**+169% — the cost**) |
 
-This is a **trade**, not a free win: 2.4× throughput bought with 2.7× worse
-time-to-first-token. True saturation was never located — it is above C=256.
+This is a **trade, not a free win**: 2.4× throughput bought with 2.7× worse TTFT — more
+sequences run concurrently, so each waits longer to start. **True saturation was never
+located**; it lies above C=256.
 
-### 3. Quantization: memory, speed, and quality
+## 4. Quantization: memory, speed, and quality
 
 ![quantization](plots/quantization_tradeoff.png)
 
@@ -113,111 +138,169 @@ time-to-first-token. True saturation was never located — it is above C=256.
 | **INT8 (GPTQ)** | 1.74 GiB | 134,192 tok | 89.8 | 14.511 | **+0.09%** |
 | INT4 (AWQ) | 1.10 GiB | 158,000 tok | 122.3 | 15.734 | **+8.52%** |
 
-**INT8 is effectively free**: 2.7× faster, 42% less VRAM, perplexity indistinguishable
-from FP16. The +0.09% is within chunk-level noise — 3 of 10 chunks were *better* than fp16.
+**INT8 is close to free — at single-request load.** 2.7× faster at C=1, 42% less VRAM, and
+perplexity indistinguishable from FP16: **+0.09%**, within chunk-level noise — 3 of 10 text
+chunks actually scored *better* than fp16. **The quality result holds unconditionally. The
+speed result does not** (see §5).
 
 **INT4 is not free.** +8.5% perplexity, and the degradation is **systematic, not noise**:
-**10 of 10 chunks got worse** (+3.7% to +13.4%). If quantization were harmless you would
-expect ~half the chunks to drift in each direction, as INT8 did.
+**10 of 10 chunks got worse**, ranging +3.7% to +13.4%. If quantization were harmless you
+would expect roughly half the chunks to drift in each direction — as INT8 did. Ten out of
+ten in one direction is not chance.
 
-Perplexity measured on a fixed 4,530-token WikiText-2 slice, identical across all three
-precisions, via vLLM's `prompt_logprobs`. Deterministic — no sampling variance.
+Perplexity was measured on a fixed **4,530-token WikiText-2 slice**, identical across all
+three precisions, via vLLM's `prompt_logprobs`. It is deterministic — no sampling variance.
+Perplexity was chosen over task accuracy because it is *sensitive*: every token contributes
+signal, so a small degradation is detectable on thousands of tokens where a task eval would
+need thousands of *questions* to clear the noise floor.
 
-### 4. Quantization's benefit decays with load
+## 5. Quantization's speed advantage vanishes under load
 
 ![decay](plots/int4_advantage_decay.png)
 
+Throughput relative to FP16, across the full sweep:
+
 | concurrency | 1 | 8 | 32 | 64 | 128 |
 |---|---|---|---|---|---|
-| INT4 speedup vs FP16 | **3.70×** | 2.58× | 1.88× | 1.57× | **1.10×** |
+| **INT8 (GPTQ)** | **2.74×** | 1.96× | 1.51× | 1.31× | **0.94×** |
+| **INT4 (AWQ)** | **3.75×** | 2.56× | 1.82× | 1.02×* | **1.04×** |
 
-At C=1 decoding is **memory-bandwidth-bound** — the GPU spends its time reading weights,
-so 2.7× fewer bytes means ~3.7× faster. At C=128 it is **compute-bound** — weight reads
-amortise across the batch and the dequantisation overhead consumes nearly the entire
-advantage.
+Absolute throughput at C=128: FP16 **2,197**, INT8 **2,061**, INT4 **2,276** tok/s — a
+spread of only **10.4%** across a **2.7× difference in weight size**.
 
-**Quantization's speed benefit is inversely proportional to how busy your server is.**
-I predicted the opposite before measuring, and was wrong.
+At C=1, decoding is **memory-bandwidth-bound**: the GPU spends its time reading weights out
+of VRAM, so fewer bytes means proportionally faster. At C=128 it is **compute-bound**:
+weight reads amortise across the batch, dequantisation overhead applies, and the advantage
+disappears.
+
+**The convergence is the finding.** Three models with radically different memory footprints
+landing within 10% of each other suggests a **shared hardware ceiling** — consistent with a
+45 W power-limited GPU running out of compute rather than bandwidth.
+
+> **Practical implication: on a busy server, quantization buys you memory, not speed.**
+> That memory is still valuable — it is what lets a larger model fit, or a larger KV cache
+> serve more concurrent contexts. But the tokens/sec headline quantization advertises is a
+> **single-request phenomenon**. I predicted the opposite before measuring, and was wrong.
+
+*\* INT4's C=64 point is unreliable: two identical runs gave 1.02× and 1.57× (throughput
+1,514 vs 2,334 tok/s). The monotonic decay is robust across two independent precisions; the
+specific multipliers rest on single runs with ~35% observed variance. See limitation #9.*
 
 ---
 
 ## Methodology
 
-- **Warmup + repeated trials.** All single-request numbers are 10 trials after 2 warmups,
-  reported with spread (typical stdev < 2%).
-- **Determinism.** `temperature=0` throughout; every trial produces identical output and
-  therefore identical work.
-- **One ruler for all engines.** TTFT and latency are timed by our own wall clock, not by
-  each engine's self-reported timings, so engines are measured identically. Token *counts*
-  come from each engine's own reporting (`eval_count` / `usage.completion_tokens`).
+- **Warmup + repeated trials.** Single-request figures are 10 measured trials after 2
+  discarded warmups, reported with spread (typical stdev < 2%).
+- **Determinism.** `temperature=0` throughout, so every trial produces identical output and
+  therefore performs identical work.
+- **One ruler for every engine.** TTFT and latency are timed by *our* wall clock — not each
+  engine's self-reported timings — so engines are measured identically. Token *counts* come
+  from each engine's own reporting (`eval_count` / `usage.completion_tokens`), never from
+  counting stream packets (an early version did, and was wrong by 20×).
+- **Latency decomposition.** TTFT is broken into load / prefill / generate and reconciled
+  against the engine's own reported total. **This is what caught the IPv6 bug** (below).
 - **Little's Law validation.** Every sweep row checks `concurrency ≈ throughput × latency`
-  and reports the achieved concurrency. **This caught a silent bug**: with a fixed 60
-  requests per level, levels above C=64 could never reach their target concurrency — five
-  "different" levels were secretly the same experiment. The apparent plateau was an
-  artifact. Request counts now auto-scale to 10× concurrency.
+  and reports achieved concurrency alongside requested. **This caught a silent bug:** with a
+  fixed 60 requests per level, levels above C=64 could never reach their target concurrency
+  — five "different" levels were secretly the same experiment, and the resulting flat line
+  looked exactly like a clean saturation plateau. Request counts now auto-scale to 10×
+  concurrency.
 - **Independent cross-validation.** Key results re-measured with `vllm bench serve`.
+- **Sequential benchmarking.** Only one model fits in 8 GB, so engines are measured one at a
+  time and compared from saved JSON.
 
 ---
 
 ## Limitations
 
-Stated plainly, because under-measured results are worse than no results.
+Stated at length, because under-measured results are worse than no results.
 
 1. **Single prompt.** Every sweep used one identical 22-token prompt. vLLM reported an
-   **82% prefix-cache hit rate** as a result — throughput numbers are inflated by caching
-   a real workload wouldn't get. `vllm bench serve` with random prompts gave **1,703 tok/s
-   at C=128 vs our 2,197** — suggesting **~30% inflation**. No prompt-length distribution
-   was tested; prefill behaviour is therefore uncharacterised.
-2. **Closed-loop load generation.** N workers each fire the next request on completion.
-   This couples offered load to server speed and suffers coordinated omission. Open-loop
-   (Poisson arrivals at fixed RPS) is the rigorous approach and was not implemented.
-3. **Engines benchmarked sequentially, not concurrently.** Two fp16 1.5B models exceed
-   8 GB, so both could never be resident. Runs are minutes apart, not simultaneous.
+   **82% prefix-cache hit rate** as a direct result — throughput figures are inflated by
+   caching a realistic workload would not receive. `vllm bench serve` with random prompts
+   gave **1,703 tok/s at C=128 against our 2,197**, implying **~30% inflation**. No prompt-
+   length distribution was tested, so prefill behaviour is essentially uncharacterised.
+2. **Closed-loop load generation.** N workers each fire the next request on completion. This
+   couples offered load to server speed and suffers coordinated omission. Open-loop
+   generation (Poisson arrivals at a fixed rate) is the rigorous approach and was not
+   implemented.
+3. **Engines benchmarked sequentially, not concurrently.** Two fp16 1.5B models exceed 8 GB,
+   so both could never be resident. Runs are minutes apart, not simultaneous.
 4. **Different environments.** vLLM ran in WSL2 (Linux); Ollama ran natively on Windows.
-   Same physical GPU, different stacks.
+   Same physical GPU, different stacks. A rigorous comparison would run both in WSL2.
 5. **Bit-width and algorithm are conflated.** INT8 is GPTQ; INT4 is AWQ. "INT4 is 8.5%
-   worse" partly measures AWQ-vs-GPTQ, not purely 8-vs-4 bits. Isolating this needs
-   `GPTQ-Int4`, which was not run.
-6. **Quantization damage may be size-specific.** 8.5% is higher than the 1–3% AWQ papers
-   typically report — plausibly because 1.5B models have less redundancy to absorb rounding
+   worse" partly measures *AWQ vs GPTQ*, not purely *8-bit vs 4-bit*. Isolating this
+   requires `GPTQ-Int4`, which was not run.
+6. **Quantization damage is likely size-specific.** +8.5% is higher than the 1–3% AWQ papers
+   typically report — plausibly because a 1.5B model has less redundancy to absorb rounding
    error. **These results should not be extrapolated to 7B+.**
-7. **Perplexity is a proxy.** +8.5% perplexity does not mean 8.5% worse answers. No
+7. **Perplexity is a proxy.** +8.5% perplexity does **not** mean 8.5% worse answers. No
    downstream task accuracy (GSM8K, MMLU) was measured.
 8. **Non-standard perplexity protocol.** A 20k-char WikiText-2 slice scored in independent
    chunks, not the full test set with sliding-window context. Absolute values are **not**
-   comparable to published figures; only the deltas are meaningful.
-9. **Single-run sweeps.** Concurrency sweeps were run once, not repeated. Observed
-   run-to-run variance at C=64 was **~35%** (26.1 vs 40.3 req/s across identical runs) —
-   sweep numbers are far less reproducible than the single-request trials suggest.
-10. **True saturation never located.** With `max_num_seqs=512` the cliff disappeared;
-    no higher concurrency was tested. The real ceiling is unknown.
-11. **Ollama's parallelism not exhaustively swept.** Tested 1/8/16/32. `=16` was best,
-    `=32` spilled to CPU. Intermediate values untested.
-12. **Unexplained: Ollama reports a fixed ~0.38 s `load_duration` per request** even with
-    the model verified resident (`ollama ps` = 100% GPU), pinned (`keep_alive=30m`), and
-    no other GPU process. Ruled out: eviction, GPU contention. Cause unknown.
-13. **Unexplained: Ollama's reported memory scales non-linearly** with `NUM_PARALLEL`
-    (3.3 GB at 16, 7.7 GB at 32), suggesting lazy allocation or a silent cap.
-14. **No cost-per-million-tokens.** Not computed. Would be modelled, not measured, since
-    this ran on owned hardware.
-15. **A ~2 s measurement bug existed and was fixed mid-project.** On Windows, `localhost`
-    resolved to IPv6 first and stalled ~2 s per request before falling back. This silently
-    doubled every latency number until caught by reconciling our wall clock against the
-    engine's self-reported timings. All published numbers use `127.0.0.1`. **Any result
-    from before this fix would have been wrong and looked fine.**
+   comparable to published figures — only the deltas between precisions are meaningful.
+   WikiText is also base-model text scored with an instruct model.
+9. **Single-run sweeps.** Concurrency sweeps were run once, not repeated. Observed run-to-run
+   variance at C=64 reached **~35%** (26.1 vs 40.3 req/s on identical INT4 configurations).
+   **Sweep figures are far less reproducible than the single-request trials suggest.**
+10. **True saturation never located.** With `max_num_seqs=512` the cliff disappeared; no
+    higher concurrency was tested. The real ceiling is unknown.
+11. **Ollama's parallelism not exhaustively swept.** Tested 1 / 8 / 16 / 32. `=16` was best;
+    `=32` spilled to CPU. Intermediate and higher values untested.
+12. **Unexplained: Ollama reports a fixed ~0.38 s `load_duration` per request** even with the
+    model verified resident (`ollama ps` = 100% GPU), explicitly pinned
+    (`keep_alive=30m`), and no other process on the GPU. Ruled out: model eviction (persists
+    across rapid back-to-back requests) and GPU contention (persists with all other GPU apps
+    closed). Cause unknown; bounded and separable, so tok/s figures are unaffected.
+13. **Unexplained: Ollama's reported memory scales non-linearly** with `NUM_PARALLEL` —
+    3.3 GB at `=16` but 7.7 GB at `=32`, when 16 slots × 4096 context should already demand
+    far more than 0.2 GB above the weights. Suggests lazy allocation or a silent cap on
+    actual parallelism.
+14. **Unexplained: bimodal latency in Ollama at C=16** (`NUM_PARALLEL=16`): p50 4.26s but
+    p99 9.59s — a >2× gap where every other measurement had p50 and p99 nearly touching.
+    Some requests stalled while others proceeded. Not reproduced or diagnosed.
+15. **No cost-per-million-tokens.** Not computed. It would be *modelled*, not measured, since
+    this ran on owned hardware — presenting a notional figure as if incurred would be
+    dishonest.
+16. **A ~2 s measurement bug existed and was fixed mid-project.** On Windows, `localhost`
+    resolved to IPv6 (`::1`) first and stalled ~2 s per request before falling back to IPv4.
+    This **silently doubled every latency number** until it was caught by reconciling our
+    wall clock against the engine's self-reported timings (`Overhead gap: 2.03s → 0.01s`
+    after switching to `127.0.0.1`). All published numbers use the fixed path. **Any result
+    from before this fix would have been wrong and looked entirely reasonable.**
+17. **Some inputs were hand-transcribed.** vLLM's weight/KV-cache figures and all
+    `vllm bench serve` results were read off terminal output and typed into `manifest.json`
+    by hand. They are not captured programmatically, and a transcription error would be
+    undetectable. The concurrency, latency, and perplexity figures are unaffected — those
+    come from harness-written JSON.
 
 ---
 
 ## What I would do next
 
-1. **Open-loop load generation** with Poisson arrivals — the single biggest methodological gap.
-2. **Prompt-length distributions** (short/medium/long) and random prompts, to kill the
-   prefix-cache confound and characterise prefill.
-3. **Repeat sweeps 3×** and report spread; 35% single-run variance is not publishable.
-4. **`GPTQ-Int4`** to separate bit-width from algorithm.
-5. **Downstream task eval** (GSM8K subset) to translate perplexity into user-facing quality.
-6. **Sweep `max_num_seqs`** properly and map the throughput/TTFT Pareto frontier.
-7. **A larger GPU** to test whether the quantization findings hold at 7B+.
+In priority order — the first three would strengthen **every existing result**, which is why
+they outrank adding new chapters:
+
+1. **Open-loop load generation** with Poisson arrivals — the single largest methodological
+   gap (limitation #2).
+2. **Prompt-length distributions and random prompts** — kills the prefix-cache confound
+   (#1) and characterises prefill, which is currently unmeasured.
+3. **Repeat every sweep 3× and report spread** — 35% single-run variance is not publishable
+   (#9).
+4. **`GPTQ-Int4`** — separates bit-width from quantization algorithm (#5).
+5. **Downstream task eval** (GSM8K subset) — translates perplexity into user-facing quality
+   (#7).
+6. **Sweep `max_num_seqs` properly** and map the throughput/TTFT Pareto frontier; locate
+   true saturation (#10).
+7. **A larger GPU** — test whether the quantization findings hold at 7B+ (#6).
+8. **NVIDIA Triton Inference Server** (with a vLLM backend) — measure the overhead a
+   production serving layer adds atop the raw engine, and demonstrate the standard NVIDIA
+   deployment path. Not attempted here; scoped out early given the 8 GB VRAM and disk
+   constraints that shaped the project.
+9. **TensorRT-LLM** — NVIDIA's own inference engine. Scoped as optional at the outset and
+   not attempted: engine builds are heavy for 8 GB, and this GPU (Ampere) lacks the FP8
+   support that is TensorRT-LLM's main differentiator.
 
 ---
 
@@ -225,35 +308,44 @@ Stated plainly, because under-measured results are worse than no results.
 
 ```bash
 git clone <repo> && cd llm-serving-optimization
-python -m venv .venv && .venv\Scripts\Activate.ps1     # Windows
+python -m venv .venv && .venv\Scripts\Activate.ps1      # Windows
 pip install -r requirements.txt
 
-# start ONE engine (8 GB fits one model at a time)
+# Start ONE engine — 8 GB fits one model at a time.
+# (in WSL2)
 vllm serve Qwen/Qwen2.5-1.5B-Instruct --port 8000 --dtype float16 \
-  --max-model-len 4096 --gpu-memory-utilization 0.80        # in WSL2
+  --max-model-len 4096 --gpu-memory-utilization 0.80
 
 python src/benchmark.py vllm        # single-request: TTFT, tok/s, spread
-python src/concurrency.py vllm      # concurrency sweep + Little's Law check
-python src/quality.py vllm          # perplexity
-python src/plots.py                 # regenerate every figure from results/
+python src/concurrency.py vllm      # concurrency sweep + Little's Law validation
+python src/quality.py vllm          # perplexity via prompt_logprobs
+python src/plots.py                 # regenerate every figure
 ```
 
-Every figure in this README is generated by `src/plots.py` from the raw JSON in
-`results/`. Nothing is hand-transcribed.
+Swap `vllm` for `vllm-int8`, `vllm-int4`, or `ollama` (all defined in `config.yaml`).
+For Ollama, set `OLLAMA_NUM_PARALLEL` **before** starting the server — it is read only at
+startup, and the default serialises requests.
+
+Every figure is generated by `src/plots.py` from two sources: the raw JSON in `results/`
+(written programmatically by the harness) and `manifest.json` (hand-recorded from server
+logs — see limitation #17).
 
 ## Repo layout
 
 ```
-config.yaml        all knobs; no hardcoded values
+config.yaml        every knob; no hardcoded values
 manifest.json      hardware, versions, hand-recorded log measurements
-data/              fixed perplexity eval text (committed for reproducibility)
+data/
+  eval_text.txt    fixed perplexity text, committed for reproducibility
 src/
   client.py        engine adapters (Ollama + vLLM) behind one interface
-  metrics.py       summary stats + percentiles
-  benchmark.py     single-request harness
+  metrics.py       summary statistics + percentiles
+  benchmark.py     single-request harness (warmup, trials, spread)
   concurrency.py   concurrency sweep + Little's Law validation
   quality.py       perplexity via prompt_logprobs
   plots.py         regenerates all figures from results/
-results/           raw JSON, one file per run (immutable)
+results/           raw JSON, one file per run — immutable, never overwritten
 plots/             generated figures
 ```
+
+Adding an engine means writing one adapter class and one config entry. Nothing else changes.

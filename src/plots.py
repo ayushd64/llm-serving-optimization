@@ -41,7 +41,8 @@ def plot_throughput():
              ("sweep-vllm-int4.json", "vLLM int4 (AWQ)", GREEN, "-", "s"),
              ("sweep-ollama-p16.json", "Ollama NUM_PARALLEL=16", AMBER, "--", "^"),
              ("sweep-ollama-p8.json", "Ollama NUM_PARALLEL=8", GRAY, "--", "v"),
-             ("sweep-ollama-p32.json", "Ollama NUM_PARALLEL=32 (VRAM spill)", RED, ":", "x")]
+             ("sweep-ollama-p32.json", "Ollama NUM_PARALLEL=32 (VRAM spill)", RED, ":", "x"),
+             ("sweep-vllm-int8.json", "vLLM int8 (GPTQ)", "#7b3fa0", "-", "D")]
     fig, ax = plt.subplots(figsize=(9, 5.5))
     for fname, label, color, ls, marker in specs:
         rec = load(fname)
@@ -117,29 +118,38 @@ def plot_quantization():
 
 
 def plot_int4_decay():
-    """The subtle result: INT4's advantage decays as the server gets busy."""
-    fp16, int4 = load("sweep-vllm.json"), load("sweep-vllm-int4.json")
-    if not (fp16 and int4):
+    """The subtle result: quantization's advantage decays as the server gets busy."""
+    fp16 = load("sweep-vllm.json")
+    if not fp16:
         return
     f = {r["concurrency"]: r["throughput_tps"] for r in fp16["sweep"]}
-    i = {r["concurrency"]: r["throughput_tps"] for r in int4["sweep"]}
-    xs = sorted(set(f) & set(i))
-    ratio = [i[c] / f[c] for c in xs]
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(xs, ratio, color=GREEN, marker="o", lw=2.5)
+    for fname, label, color in [("sweep-vllm-int8.json", "INT8 (GPTQ)", AMBER),
+                                ("sweep-vllm-int4.json", "INT4 (AWQ)", GREEN)]:
+        rec = load(fname)
+        if rec is None:
+            continue
+        q = {r["concurrency"]: r["throughput_tps"] for r in rec["sweep"]}
+        xs = sorted(c for c in set(f) & set(q) if c <= 128)   # 256 is the max_num_seqs artifact
+        ratio = [q[c] / f[c] for c in xs]
+        ax.plot(xs, ratio, color=color, marker="o", lw=2.5, label=label)
+        for x, r in zip(xs, ratio):
+            ax.annotate(f"{r:.2f}x", (x, r), textcoords="offset points",
+                        xytext=(0, 8), ha="center", fontsize=8)
     ax.axhline(1.0, color=GRAY, ls="--", lw=1)
     ax.set_xscale("log", base=2)
     ax.set_xlabel("concurrency (requests in flight)")
-    ax.set_ylabel("INT4 throughput / FP16 throughput")
-    ax.set_title("INT4's advantage decays with load\n(memory-bound at C=1 → compute-bound at C=128)")
+    ax.set_ylabel("throughput vs FP16")
+    ax.set_title("Quantization's speed advantage decays with load\n"
+                 "(memory-bound at C=1 → compute-bound at C=128)")
     ax.grid(alpha=0.3)
-    for x, r in zip(xs, ratio):
-        ax.annotate(f"{r:.2f}x", (x, r), textcoords="offset points", xytext=(0, 8),
-                    ha="center", fontsize=8)
+    ax.legend()
     fig.tight_layout()
     fig.savefig(PLOTS / "int4_advantage_decay.png", dpi=150)
     plt.close(fig)
+
+
 
 
 def plot_max_num_seqs():

@@ -1,0 +1,72 @@
+{
+  "engine": "vllm",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "timestamp_utc": "20260713-084702",
+  "settings": {
+    "temperature": 0,
+    "max_tokens": 256,
+    "requests_per_level": 60
+  },
+  "sweep": [
+    {
+      "concurrency": 1,
+      "requests": 60,
+      "wall_s": 101.92659899999853,
+      "throughput_rps": 0.5886589034526784,
+      "throughput_tps": 29.432945172633918,
+      "latency_p50": 1.7023399499994412,
+      "latency_p95": 1.783939229998032,
+      "latency_p99": 1.7987023990007946
+    },
+    {
+      "concurrency": 2,
+      "requests": 60,
+      "wall_s": 37.57377289999931,
+      "throughput_rps": 1.596858536396836,
+      "throughput_tps": 77.39441039736666,
+      "latency_p50": 1.2313230500003556,
+      "latency_p95": 1.3131025400018188,
+      "latency_p99": 1.3483186520024173
+    },
+    {
+      "concurrency": 4,
+      "requests": 60,
+      "wall_s": 19.381996700001764,
+      "throughput_rps": 3.095656290148607,
+      "throughput_tps": 149.00425609915294,
+      "latency_p50": 1.2947148000002926,
+      "latency_p95": 1.318891774999247,
+      "latency_p99": 1.330866484000544
+    },
+    {
+      "concurrency": 8,
+      "requests": 60,
+      "wall_s": 11.270908000002237,
+      "throughput_rps": 5.323439779651125,
+      "throughput_tps": 264.0426130706958,
+      "latency_p50": 1.4005070500006696,
+      "latency_p95": 1.5811301099993216,
+      "latency_p99": 1.5859973769994757
+    },
+    {
+      "concurrency": 16,
+      "requests": 60,
+      "wall_s": 5.82942120000007,
+      "throughput_rps": 10.292617044038485,
+      "throughput_tps": 514.6308522019243,
+      "latency_p50": 1.4492688000009366,
+      "latency_p95": 1.4813249399980122,
+      "latency_p99": 1.4835448269984772
+    },
+    {
+      "concurrency": 32,
+      "requests": 60,
+      "wall_s": 3.3307734000009077,
+      "throughput_rps": 18.013834264433495,
+      "throughput_tps": 883.278340099389,
+      "latency_p50": 1.6765042500010168,
+      "latency_p95": 1.7085941099971023,
+      "latency_p99": 1.7091738530030853
+    }
+  ]
+}

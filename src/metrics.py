@@ -24,3 +24,16 @@ def summarize(values):
         # stdev needs at least 2 numbers; with 1 there's no spread to report.
         "stdev": statistics.stdev(values) if len(values) > 1 else 0.0,
     }
+
+
+def percentile(values, p):
+    """Linear-interpolated percentile. p is 0-100 (e.g. 95 for P95)."""
+    if not values:
+        return 0.0
+    s = sorted(values)
+    if len(s) == 1:
+        return s[0]
+    k = (len(s) - 1) * (p / 100.0)
+    lo = int(k)
+    hi = min(lo + 1, len(s) - 1)
+    return s[lo] + (s[hi] - s[lo]) * (k - lo)

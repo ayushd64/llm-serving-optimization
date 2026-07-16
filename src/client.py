@@ -17,6 +17,15 @@ from dataclasses import dataclass
 import requests
 
 
+def _make_session():
+    """A session that ignores the system proxy and allows many parallel connections."""
+    session = requests.Session()
+    session.trust_env = False
+    adapter = requests.adapters.HTTPAdapter(pool_connections=128, pool_maxsize=128)
+    session.mount("http://", adapter)
+    return session
+
+
 @dataclass
 class RequestResult:
     ttft_s: float          # wall-clock: send -> first token
@@ -44,8 +53,7 @@ class OllamaClient(EngineClient):
     """Adapter for Ollama's native /api/generate streaming format."""
     def __init__(self, url, model):
         self.url, self.model = url, model
-        self.session = requests.Session()
-        self.session.trust_env = False          # ignore system proxy (our earlier fix)
+        self.session = _make_session()         # ignore system proxy (our earlier fix)
 
     def run(self, prompt, temperature, max_tokens):
         payload = {

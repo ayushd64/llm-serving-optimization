@@ -1,0 +1,84 @@
+{
+  "engine": "vllm-int4",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct-AWQ",
+  "timestamp_utc": "20260716-051527",
+  "settings": {
+    "temperature": 0,
+    "max_tokens": 256,
+    "requests_per_level": 0
+  },
+  "sweep": [
+    {
+      "concurrency": 1,
+      "requests": 60,
+      "wall_s": 30.51520110000274,
+      "throughput_rps": 1.9662331505983295,
+      "throughput_tps": 114.04152273470311,
+      "latency_p50": 0.5079542499988747,
+      "latency_p95": 0.5352186950010946,
+      "latency_p99": 0.5376958279998871,
+      "implied_concurrency": 0.998756485335099,
+      "concurrency_achieved_pct": 99.8756485335099
+    },
+    {
+      "concurrency": 8,
+      "requests": 80,
+      "wall_s": 6.273875700000644,
+      "throughput_rps": 12.751288649214358,
+      "throughput_tps": 739.5747416544327,
+      "latency_p50": 0.6254952000017511,
+      "latency_p95": 0.6437189549989852,
+      "latency_p99": 0.6449683650006409,
+      "implied_concurrency": 7.9758698439203926,
+      "concurrency_achieved_pct": 99.69837304900491
+    },
+    {
+      "concurrency": 32,
+      "requests": 320,
+      "wall_s": 10.987779099999898,
+      "throughput_rps": 29.12326477331556,
+      "throughput_tps": 1686.965111994304,
+      "latency_p50": 1.0940405000001192,
+      "latency_p95": 1.1249521550009376,
+      "latency_p99": 1.1545691039995654,
+      "implied_concurrency": 31.862031154234014,
+      "concurrency_achieved_pct": 99.5688473569813
+    },
+    {
+      "concurrency": 64,
+      "requests": 640,
+      "wall_s": 24.49212510000143,
+      "throughput_rps": 26.130848074100463,
+      "throughput_tps": 1513.6293746922693,
+      "latency_p50": 2.4479732500021782,
+      "latency_p95": 2.541806289998385,
+      "latency_p99": 2.553160418002408,
+      "implied_concurrency": 63.96761708526887,
+      "concurrency_achieved_pct": 99.9494016957326
+    },
+    {
+      "concurrency": 128,
+      "requests": 1280,
+      "wall_s": 32.56926929999827,
+      "throughput_rps": 39.30085100190038,
+      "throughput_tps": 2275.8877184881744,
+      "latency_p50": 3.2621213999991596,
+      "latency_p95": 3.293298555000183,
+      "latency_p99": 3.3404383709985632,
+      "implied_concurrency": 128.20414709147764,
+      "concurrency_achieved_pct": 100.15948991521691
+    },
+    {
+      "concurrency": 256,
+      "requests": 2560,
+      "wall_s": 210.14069329999984,
+      "throughput_rps": 12.182314428482957,
+      "throughput_tps": 705.9460862642928,
+      "latency_p50": 21.15519989999848,
+      "latency_p95": 21.458166475001054,
+      "latency_p99": 21.47759065099919,
+      "implied_concurrency": 257.7192969791927,
+      "concurrency_achieved_pct": 100.67160038249713
+    }
+  ]
+}

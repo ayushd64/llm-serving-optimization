@@ -1,7 +1,7 @@
 {
-  "engine": "vllm",
-  "model": "Qwen/Qwen2.5-1.5B-Instruct",
-  "timestamp_utc": "20260716-043038",
+  "engine": "vllm-int8",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct-GPTQ-Int8",
+  "timestamp_utc": "20260716-042141",
   "prompt": "Explain what a GPU is in two sentences.",
   "settings": {
     "temperature": 0,
@@ -12,106 +12,106 @@
   "summary": {
     "gen_tps": {
       "count": 10,
-      "mean": 33.49836489730561,
-      "median": 33.427963443077196,
-      "min": 32.23905854054587,
-      "max": 35.14943531355884,
-      "stdev": 0.9015236766475844
+      "mean": 90.08667203683042,
+      "median": 89.8211556060382,
+      "min": 84.67520492268224,
+      "max": 96.10948792856303,
+      "stdev": 3.9619734420255983
     },
     "ttft_s": {
       "count": 10,
-      "mean": 0.07002515000058337,
-      "median": 0.0701905000005354,
-      "min": 0.06639630000063335,
-      "max": 0.07188380000116013,
-      "stdev": 0.0014894094626736077
+      "mean": 0.025132399999711195,
+      "median": 0.024584699999650184,
+      "min": 0.02297800000087591,
+      "max": 0.0283395999995264,
+      "stdev": 0.001594823878633211
     },
     "total_s": {
       "count": 10,
-      "mean": 1.5337294300004942,
-      "median": 1.5358780000005936,
-      "min": 1.460444300000745,
-      "max": 1.5901185000002442,
-      "stdev": 0.04025020448927517
+      "mean": 0.5699927800000296,
+      "median": 0.5704319999995278,
+      "min": 0.5349888000000647,
+      "max": 0.6032091999986733,
+      "stdev": 0.023554334706380478
     }
   },
   "trials": [
     {
-      "ttft_s": 0.0694710000007035,
-      "total_s": 1.4945800000004965,
-      "gen_tps": 34.383334888774904,
+      "ttft_s": 0.025153599999612197,
+      "total_s": 0.5349888000000647,
+      "gen_tps": 96.10948792856303,
       "prompt_tokens": 39,
       "output_tokens": 50,
       "response_text": "A GPU (Graphics Processing Unit) is a specialized processor designed to handle complex mathematical operations and parallel processing tasks commonly found in graphics rendering and scientific computing applications. It accelerates the performance of these tasks by utilizing multiple cores for concurrent execution of instructions."
     },
     {
-      "ttft_s": 0.06639630000063335,
-      "total_s": 1.460444300000745,
-      "gen_tps": 35.14943531355884,
+      "ttft_s": 0.02297800000087591,
+      "total_s": 0.5926214999999502,
+      "gen_tps": 86.01871170316106,
       "prompt_tokens": 39,
       "output_tokens": 50,
       "response_text": "A GPU (Graphics Processing Unit) is a specialized processor designed to handle complex mathematical operations and parallel processing tasks commonly found in graphics rendering and scientific computing applications. It accelerates the performance of these tasks by utilizing multiple cores for concurrent execution of instructions."
     },
     {
-      "ttft_s": 0.06955980000020645,
-      "total_s": 1.526109100001122,
-      "gen_tps": 33.641154473775245,
+      "ttft_s": 0.024358099999517435,
+      "total_s": 0.5357483000007051,
+      "gen_tps": 95.81724483552131,
       "prompt_tokens": 39,
       "output_tokens": 50,
       "response_text": "A GPU (Graphics Processing Unit) is a specialized processor designed to handle complex mathematical operations and parallel processing tasks commonly found in graphics rendering and scientific computing applications. It accelerates the performance of these tasks by utilizing multiple cores for concurrent execution of instructions."
     },
     {
-      "ttft_s": 0.07015800000044692,
-      "total_s": 1.5046266999997897,
-      "gen_tps": 34.15898862068057,
+      "ttft_s": 0.024527399998987676,
+      "total_s": 0.6032091999986733,
+      "gen_tps": 84.67520492268224,
       "prompt_tokens": 39,
       "output_tokens": 50,
       "response_text": "A GPU (Graphics Processing Unit) is a specialized processor designed to handle complex mathematical operations and parallel processing tasks commonly found in graphics rendering and scientific computing applications. It accelerates the performance of these tasks by utilizing multiple cores for concurrent execution of instructions."
     },
     {
-      "ttft_s": 0.07039970000005269,
-      "total_s": 1.5456469000000652,
-      "gen_tps": 33.21477241237915,
+      "ttft_s": 0.024552400000175112,
+      "total_s": 0.5548194000002695,
+      "gen_tps": 92.40627834655236,
       "prompt_tokens": 39,
       "output_tokens": 50,
       "response_text": "A GPU (Graphics Processing Unit) is a specialized processor designed to handle complex mathematical operations and parallel processing tasks commonly found in graphics rendering and scientific computing applications. It accelerates the performance of these tasks by utilizing multiple cores for concurrent execution of instructions."
     },
     {
-      "ttft_s": 0.0701468000006571,
-      "total_s": 1.5200328000009904,
-      "gen_tps": 33.79576049426557,
+      "ttft_s": 0.0283395999995264,
+      "total_s": 0.5821751000003133,
+      "gen_tps": 88.47392411633126,
       "prompt_tokens": 39,
       "output_tokens": 50,
       "response_text": "A GPU (Graphics Processing Unit) is a specialized processor designed to handle complex mathematical operations and parallel processing tasks commonly found in graphics rendering and scientific computing applications. It accelerates the performance of these tasks by utilizing multiple cores for concurrent execution of instructions."
     },
     {
-      "ttft_s": 0.07042340000043623,
-      "total_s": 1.5642448000016884,
-      "gen_tps": 32.80177938270192,
+      "ttft_s": 0.024616999999125255,
+      "total_s": 0.5768975999999384,
+      "gen_tps": 88.72301507590137,
       "prompt_tokens": 39,
       "output_tokens": 50,
       "response_text": "A GPU (Graphics Processing Unit) is a specialized processor designed to handle complex mathematical operations and parallel processing tasks commonly found in graphics rendering and scientific computing applications. It accelerates the performance of these tasks by utilizing multiple cores for concurrent execution of instructions."
     },
     {
-      "ttft_s": 0.07158970000091358,
-      "total_s": 1.5538780999995652,
-      "gen_tps": 33.056994846646965,
+      "ttft_s": 0.027505699999892386,
+      "total_s": 0.5636635000009846,
+      "gen_tps": 91.39100466299321,
       "prompt_tokens": 39,
       "output_tokens": 50,
       "response_text": "A GPU (Graphics Processing Unit) is a specialized processor designed to handle complex mathematical operations and parallel processing tasks commonly found in graphics rendering and scientific computing applications. It accelerates the performance of these tasks by utilizing multiple cores for concurrent execution of instructions."
     },
     {
-      "ttft_s": 0.07188380000116013,
-      "total_s": 1.5776131000002351,
-      "gen_tps": 32.54236999972711,
+      "ttft_s": 0.02426530000047933,
+      "total_s": 0.5918380000002799,
+      "gen_tps": 86.33255264042337,
       "prompt_tokens": 39,
       "output_tokens": 50,
       "response_text": "A GPU (Graphics Processing Unit) is a specialized processor designed to handle complex mathematical operations and parallel processing tasks commonly found in graphics rendering and scientific computing applications. It accelerates the performance of these tasks by utilizing multiple cores for concurrent execution of instructions."
     },
     {
-      "ttft_s": 0.07022300000062387,
-      "total_s": 1.5901185000002442,
-      "gen_tps": 32.23905854054587,
+      "ttft_s": 0.02502689999892027,
+      "total_s": 0.5639663999991171,
+      "gen_tps": 90.91929613617503,
       "prompt_tokens": 39,
       "output_tokens": 50,
       "response_text": "A GPU (Graphics Processing Unit) is a specialized processor designed to handle complex mathematical operations and parallel processing tasks commonly found in graphics rendering and scientific computing applications. It accelerates the performance of these tasks by utilizing multiple cores for concurrent execution of instructions."

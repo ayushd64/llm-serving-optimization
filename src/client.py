@@ -130,12 +130,23 @@ class VLLMClient(EngineClient):
                              usage.get("prompt_tokens", 0), out_tok, text)
 
 
+# def make_client(engine_config):
+#     """Factory: build the right adapter from a config entry."""
+#     name = engine_config["name"]
+#     if name == "ollama":
+#         return OllamaClient(engine_config["url"], engine_config["model"])
+#     if name == "vllm":
+#         return VLLMClient(engine_config["url"], engine_config["model"])
+#     raise ValueError(f"Unknown engine: {name}")
+
+
 def make_client(engine_config):
-    """Factory: build the right adapter from a config entry."""
+    """Factory: build the right adapter from a config entry.
+    Names may be suffixed (e.g. 'vllm-int4'), so we match on the prefix."""
     name = engine_config["name"]
-    if name == "ollama":
+    if name.startswith("ollama"):
         return OllamaClient(engine_config["url"], engine_config["model"])
-    if name == "vllm":
+    if name.startswith("vllm"):
         return VLLMClient(engine_config["url"], engine_config["model"])
     raise ValueError(f"Unknown engine: {name}")
 

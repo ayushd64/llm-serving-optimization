@@ -1,0 +1,121 @@
+{
+  "engine": "vllm-int4",
+  "model": "Qwen/Qwen2.5-1.5B-Instruct-AWQ",
+  "timestamp_utc": "20260716-042628",
+  "prompt": "Explain what a GPU is in two sentences.",
+  "settings": {
+    "temperature": 0,
+    "max_tokens": 256,
+    "warmup_runs": 2,
+    "trial_runs": 10
+  },
+  "summary": {
+    "gen_tps": {
+      "count": 10,
+      "mean": 124.18390065290535,
+      "median": 122.28342164907554,
+      "min": 117.74086268917864,
+      "max": 134.46304306873105,
+      "stdev": 6.2972221390380785
+    },
+    "ttft_s": {
+      "count": 10,
+      "mean": 0.023841339999853516,
+      "median": 0.023335249999945518,
+      "min": 0.02073010000094655,
+      "max": 0.03176359999997658,
+      "stdev": 0.0034790764892754693
+    },
+    "total_s": {
+      "count": 10,
+      "mean": 0.48387038999971993,
+      "median": 0.48866199999974924,
+      "min": 0.44804109999859065,
+      "max": 0.50746319999962,
+      "stdev": 0.021662640366470167
+    }
+  },
+  "trials": [
+    {
+      "ttft_s": 0.022691000000122585,
+      "total_s": 0.5034138999999413,
+      "gen_tps": 118.5714264912728,
+      "prompt_tokens": 39,
+      "output_tokens": 58,
+      "response_text": "A GPU (Graphics Processing Unit) is a specialized electronic circuit designed to rapidly manipulate and alter memory to create images tailored to be seen by humans. It's used for tasks such as those involved with the gaming industry, computer-aided design, virtual reality, and special effects production."
+    },
+    {
+      "ttft_s": 0.024132799999279086,
+      "total_s": 0.44804109999859065,
+      "gen_tps": 134.46304306873105,
+      "prompt_tokens": 39,
+      "output_tokens": 58,
+      "response_text": "A GPU (Graphics Processing Unit) is a specialized electronic circuit designed to rapidly manipulate and alter memory to create images tailored to be seen by humans. It's used for tasks such as those involved with the gaming industry, computer-aided design, virtual reality, and special effects production."
+    },
+    {
+      "ttft_s": 0.02085799999986193,
+      "total_s": 0.5049720000006346,
+      "gen_tps": 117.74086268917864,
+      "prompt_tokens": 39,
+      "output_tokens": 58,
+      "response_text": "A GPU (Graphics Processing Unit) is a specialized electronic circuit designed to rapidly manipulate and alter memory to create images tailored to be seen by humans. It's used for tasks such as those involved with the gaming industry, computer-aided design, virtual reality, and special effects production."
+    },
+    {
+      "ttft_s": 0.03176359999997658,
+      "total_s": 0.4560790999985329,
+      "gen_tps": 134.33400382544104,
+      "prompt_tokens": 39,
+      "output_tokens": 58,
+      "response_text": "A GPU (Graphics Processing Unit) is a specialized electronic circuit designed to rapidly manipulate and alter memory to create images tailored to be seen by humans. It's used for tasks such as those involved with the gaming industry, computer-aided design, virtual reality, and special effects production."
+    },
+    {
+      "ttft_s": 0.026126099999601138,
+      "total_s": 0.50746319999962,
+      "gen_tps": 118.42012593668298,
+      "prompt_tokens": 39,
+      "output_tokens": 58,
+      "response_text": "A GPU (Graphics Processing Unit) is a specialized electronic circuit designed to rapidly manipulate and alter memory to create images tailored to be seen by humans. It's used for tasks such as those involved with the gaming industry, computer-aided design, virtual reality, and special effects production."
+    },
+    {
+      "ttft_s": 0.02073010000094655,
+      "total_s": 0.4676966999995784,
+      "gen_tps": 127.52630733521134,
+      "prompt_tokens": 39,
+      "output_tokens": 58,
+      "response_text": "A GPU (Graphics Processing Unit) is a specialized electronic circuit designed to rapidly manipulate and alter memory to create images tailored to be seen by humans. It's used for tasks such as those involved with the gaming industry, computer-aided design, virtual reality, and special effects production."
+    },
+    {
+      "ttft_s": 0.026088200000231154,
+      "total_s": 0.5012777000010828,
+      "gen_tps": 119.95214540703833,
+      "prompt_tokens": 39,
+      "output_tokens": 58,
+      "response_text": "A GPU (Graphics Processing Unit) is a specialized electronic circuit designed to rapidly manipulate and alter memory to create images tailored to be seen by humans. It's used for tasks such as those involved with the gaming industry, computer-aided design, virtual reality, and special effects production."
+    },
+    {
+      "ttft_s": 0.021001999999498366,
+      "total_s": 0.47243619999972,
+      "gen_tps": 126.26424847734624,
+      "prompt_tokens": 39,
+      "output_tokens": 58,
+      "response_text": "A GPU (Graphics Processing Unit) is a specialized electronic circuit designed to rapidly manipulate and alter memory to create images tailored to be seen by humans. It's used for tasks such as those involved with the gaming industry, computer-aided design, virtual reality, and special effects production."
+    },
+    {
+      "ttft_s": 0.02397949999976845,
+      "total_s": 0.49325689999932365,
+      "gen_tps": 121.46333916795061,
+      "prompt_tokens": 39,
+      "output_tokens": 58,
+      "response_text": "A GPU (Graphics Processing Unit) is a specialized electronic circuit designed to rapidly manipulate and alter memory to create images tailored to be seen by humans. It's used for tasks such as those involved with the gaming industry, computer-aided design, virtual reality, and special effects production."
+    },
+    {
+      "ttft_s": 0.02104209999924933,
+      "total_s": 0.48406710000017483,
+      "gen_tps": 123.10350413020046,
+      "prompt_tokens": 39,
+      "output_tokens": 58,
+      "response_text": "A GPU (Graphics Processing Unit) is a specialized electronic circuit designed to rapidly manipulate and alter memory to create images tailored to be seen by humans. It's used for tasks such as those involved with the gaming industry, computer-aided design, virtual reality, and special effects production."
+    }
+  ],
+  "sample_response": "A GPU (Graphics Processing Unit) is a specialized electronic circuit designed to rapidly manipulate and alter memory to create images tailored to be seen by humans. It's used for tasks such as those i"
+}

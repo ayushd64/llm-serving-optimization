@@ -48,6 +48,29 @@ Full versions and hand-recorded measurements: [`manifest.json`](manifest.json).
 At single-request load the engines are **comparable** (vLLM 33 tok/s vs Ollama 35 tok/s).
 vLLM's advantage is entirely a concurrency story: continuous batching.
 
+![latency](plots/latency_vs_concurrency.png)
+
+Throughput is only half the picture — the other half is what users wait.
+
+| p50 latency | C=1 | C=8 | C=32 | C=64 | C=128 | C=256 |
+|---|---|---|---|---|---|---|
+| vLLM fp16 | 1.64s | 1.33s | 1.67s | 2.08s | **2.82s** | 20.88s |
+| vLLM int4 | 0.51s | 0.63s | 1.09s | 2.45s | **3.26s** | 21.16s |
+| Ollama `P=16` | 1.88s | 1.70s | **4.25s** | 8.95s | — | — |
+
+**vLLM holds p50 under 3 seconds while scaling throughput 72×** (30 → 2,197 tok/s
+from C=1 to C=128). That is the continuous-batching win stated properly: for this
+workload, throughput was nearly free in latency terms right up to the cliff.
+
+**Ollama's latency starts climbing at C=16** — exactly where its throughput plateaus —
+and then grows linearly: 4.25s → 8.95s as concurrency doubles. That is textbook
+post-saturation behaviour. Once throughput is pinned, Little's Law forces
+`latency = concurrency / throughput`, so every additional concurrent request is
+simply time spent queueing.
+
+The vLLM explosion at C=256 (2.82s → 20.88s) is **not** saturation — it is the
+`max_num_seqs` artifact analysed in the next section.
+
 **The number I almost published was wrong three times.** Ollama's default config
 serialises requests (flat 31 tok/s → a 73× "advantage" for vLLM). Setting
 `OLLAMA_NUM_PARALLEL=8` closed that to 6.7×. Sweeping further to `=16` closed it to

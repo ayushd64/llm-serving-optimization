@@ -1,0 +1,34 @@
+{
+  "hardware": {
+    "gpu": "NVIDIA GeForce RTX 3070 Laptop GPU",
+    "vram_gb": 8,
+    "power_limit_w": 45,
+    "driver": "581.95",
+    "cuda": "13.0",
+    "cpu": "Intel i7",
+    "system_ram_gb": 16,
+    "os": "Windows 11 + WSL2 (Ubuntu)"
+  },
+  "software": {
+    "vllm": "0.22.1",
+    "ollama_model_tag": "qwen2.5:1.5b-instruct-fp16",
+    "python_windows": "3.11",
+    "note": "vLLM runs in WSL2 (Linux); Ollama runs natively on Windows; harness runs on Windows."
+  },
+  "vllm_memory": {
+    "fp16":  {"weights_gib": 2.98, "kv_cache_tokens": 87024},
+    "int8":  {"weights_gib": 1.74, "kv_cache_tokens": 134192},
+    "int4":  {"weights_gib": 1.10, "kv_cache_tokens": 158000}
+  },
+  "max_num_seqs_experiment": {
+    "tool": "vllm bench serve (independent validation)",
+    "model": "Qwen/Qwen2.5-1.5B-Instruct-AWQ",
+    "dataset": "random, input_len=39, output_len=58, num_prompts=512",
+    "runs": [
+      {"max_concurrency": 128, "max_num_seqs": 256, "output_tok_s": 1703.37, "req_s": 29.37, "tpot_ms": 59.22, "ttft_ms": 960.87},
+      {"max_concurrency": 256, "max_num_seqs": 256, "output_tok_s": 733.92,  "req_s": 12.65, "tpot_ms": 342.40, "ttft_ms": 625.34},
+      {"max_concurrency": 256, "max_num_seqs": 512, "output_tok_s": 1796.19, "req_s": 30.97, "tpot_ms": 114.11, "ttft_ms": 1679.06}
+    ]
+  },
+  "single_request_tok_s": {"fp16": 33.4, "int8": 89.8, "int4": 122.3}
+}
